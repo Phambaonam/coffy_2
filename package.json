@@ -16,6 +16,7 @@
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
+    "express-vue": "^3.9.11",
     "nunjucks": "^3.0.0",
     "path": "^0.12.7",
     "pg-monitor": "^0.7.1",

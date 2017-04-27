@@ -5,22 +5,20 @@ const express = require('express');
 const app = express();
 const bodyParser = require("body-parser");
 const promise = require('./pgp');
-const nunjucks = require('nunjucks');
 const path = require('path');
 const async = require('async');
 const db = promise.db;
 
-nunjucks.configure('views', {
-    autoescape: true,
-    cache: false,
-    express: app,
-    watch: true
-});
-
 app.use("/public", express.static(__dirname + "/public"));
-app.engine('html', nunjucks.render);
-app.set("views", path.resolve(__dirname, "views"));
-app.set("views engine", "html");
+
+const expressVue = require('express-vue')
+app.engine('vue', expressVue);
+app.set('view engine', 'vue');
+app.set('views', path.join(__dirname, '/views'));
+app.set('vue', {
+    componentsDir: path.join(__dirname, '/views/components'),
+    defaultLayout: 'layout'
+});
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -30,8 +28,49 @@ app.listen(3000, function () {
     console.log('Server listening on port 3000!')
 });
 
+//GET home page
+app.get('/', (req, res) => {
+    db.any("SELECT id_location, name, address, octime, rate, la" +
+        "t, long, id_type, id_district FROM coffy.location ORDER BY random() LIMIT 30")
+        .then(data => {
+            async.mapSeries(data, merge2, (err, result) => {
+                let scope = {
+                    data: {
+                        data: result,
+                    }
+                    , vue: {
+                        head: {
+                            title: 'Home',
+                            meta:[
+                                // script
+                                {script:'/public/js/vue.min.js'},
+                                {sript:'/public/js/jquery-3.2.0.min.js'},
+                                {script:'/public/js/vue.min.js'},
+                                {script:'/public/js/bootstrap.min.js'},
+                                {script:'/public/js/script.js'},
 
-app.get('/find/near', (req, res) => {
+                                // style
+                                {style:'/public/css/reset.css',type: 'text/css', rel: 'stylesheet'},
+                                {style:'/public/css/bootstrap.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/font-awesome.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/style.css', rel: 'stylesheet'},
+                                {style:'/public/css/responsive.css',type: 'text/css', rel: 'stylesheet'}
+                            ]
+                        },
+                        components: ['mynav','myfooter','mymaincontent']
+                    }
+                };
+                res.render('index',scope);
+            });
+        })
+        .catch(error => {
+            console.log(error);
+        });
+
+
+});
+
+/* app.get('/find/near', (req, res) => {
     // let uLong = req.body['long'],
     //     uLat = req.body['lat'],
     //     uType = req.body['type'],
@@ -57,10 +96,33 @@ app.get('/find/near', (req, res) => {
         .then(data => {
             //console.log(data);
             async.mapSeries(data, merge2, (err, result) => {
-                let dt = {
-                    'datas': result
+                let scope = {
+                    data: {
+                        data: result,
+                    }
+                    , vue: {
+                        head: {
+                            title: 'Near me',
+                            meta:[
+                                // script
+                                {script:'/public/js/vue.min.js'},
+                                {sript:'/public/js/jquery-3.2.0.min.js'},
+                                {script:'/public/js/vue.min.js'},
+                                {script:'/public/js/bootstrap.min.js'},
+                                {script:'/public/js/script.js'},
+
+                                // style
+                                {style:'/public/css/reset.css',type: 'text/css', rel: 'stylesheet'},
+                                {style:'/public/css/bootstrap.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/font-awesome.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/style.css', rel: 'stylesheet'},
+                                {style:'/public/css/responsive.css',type: 'text/css', rel: 'stylesheet'}
+                            ]
+                        },
+                        components: ['mynav','myfooter','mymaincontent']
+                    }
                 };
-                res.render('index1.html', dt);
+                res.render('index',scope);
             });
             // res.json(data);
             // success;
@@ -69,29 +131,22 @@ app.get('/find/near', (req, res) => {
             console.log(error);
             // error;
         });
-    // let results = search.findLoc(uLat, uLong, uType, uR);
-    // console.log(results);
-    // res.json(results);
+}); */
+
+app.get('/map',(req,res)=>{
+    let scope = {
+        vue: {
+            head: {
+                title: 'Chi Tiet',
+                meta : [
+                    {script : 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAsB1OF-sOPmmMd9bwLpJfJfrdumJ_A6dI&callback=initMap'},
+                    {script:'https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.min.js'}
+                ]
+            },
+        }
+    };
+    res.render('map',scope)
 });
-
-//GET home page
-app.get('/', (req, res) => {
-    //let db = promise.db;
-    db.any("SELECT id_location, name, address, octime, rate, lat, long, id_type, id_district FROM coffy.location ORDER BY random() LIMIT 30")
-        .then(data => {
-            async.mapSeries(data, merge2, (err, result) => {
-                let dt = {
-                    'datas': result
-                };
-                res.render('index1.html', dt);
-            });
-        })
-        .catch(error => {
-            console.log(error);
-        });
-
-});
-
 //GET detail page
 app.get('/detail/:id', (req, res) => {
     let id = req.params.id;
@@ -101,11 +156,35 @@ app.get('/detail/:id', (req, res) => {
         .then(data => {
             let test = [data];
             async.map(test, merge2, (err, result) => {
-                let dt = {
-                    'data': result[0]
+                // console.log(result[0]);
+                let scope = {
+                    data: {
+                        data: result[0]
+                    }
+                    , vue: {
+                        head: {
+                            title: 'Chi Tiet',
+                            meta : [
+                                {script : 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAsB1OF-sOPmmMd9bwLpJfJfrdumJ_A6dI'},
+                                // script
+                                {script:'/public/js/vue.min.js'},
+                                // {sript:'/public/js/jquery-3.2.0.min.js'},
+                                {script:'/public/js/vue.min.js'},
+                                // {script:'/public/js/bootstrap.min.js'},
+                                // {script:'/public/js/script.js'},
+
+                                // style
+                                {style:'/public/css/reset.css',type: 'text/css', rel: 'stylesheet'},
+                                {style:'/public/css/bootstrap.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/font-awesome.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/style.css', rel: 'stylesheet'},
+                                {style:'/public/css/responsive.css',type: 'text/css', rel: 'stylesheet'}
+                            ]
+                        },
+                        components: ['mynav','myfooter','mymaincontent']
+                    }
                 };
-                // console.log(dt);
-                res.render('detail.html', dt);
+                res.render('detail',scope);
             });
         })
         .catch(error => {
@@ -114,15 +193,6 @@ app.get('/detail/:id', (req, res) => {
         });
 
 });
-
-/*app.post('/find/dist', (req, res) => {
- let type = req.body['type'],
- district = req.body['district'];
- let results = search.findLocInDistrict(type, district);
- console.log(results);
- res.json(results);
- });*/
-
 
 app.post('/find/loc', (req, res) => {
     // let uLong = req.body['long'],
@@ -148,19 +218,35 @@ app.post('/find/loc', (req, res) => {
             Type: uType
         })
         .then(data => {
-            //console.log(data);
             async.mapSeries(data, merge2, (err, result) => {
-                let dt = {
-                    'datas': result
-                };
-                res.render('index1.html', dt);
+                let scope = {
+                    data: {
+                        data: result,
+                    }
+                    , vue: {
+                        head: {
+                            title: 'Home',
+                            meta:[
+                                // script
+                                {script:'/public/js/vue.min.js'},
+                                {sript:'/public/js/jquery-3.2.0.min.js'},
+                                {script:'/public/js/vue.min.js'},
+                                {script:'/public/js/bootstrap.min.js'},
+                                {script:'/public/js/script.js'},
 
-                //let myJson = result;
-                //console.log(myJson)
-                //res.json(result)
+                                // style
+                                {style:'/public/css/reset.css',type: 'text/css', rel: 'stylesheet'},
+                                {style:'/public/css/bootstrap.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/font-awesome.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/style.css', rel: 'stylesheet'},
+                                {style:'/public/css/responsive.css',type: 'text/css', rel: 'stylesheet'}
+                            ]
+                        },
+                        components: ['mynav','myfooter','mymaincontent']
+                    }
+                };
+                res.render('index',scope);
             });
-            // res.json(data);
-            // success;
         })
         .catch(error => {
             console.log(error);
@@ -172,7 +258,8 @@ app.post('/find/loc', (req, res) => {
 });
 
 app.post('/find/dist', (req, res) => {
-    let type = parseFloat(req.body['inType2']),
+    console.log(req.body);
+   let type = parseFloat(req.body['inType2']),
         district = parseFloat(req.body['inDist']);
     //let db = promise.db;
     db.any("SELECT id_location, name, address, octime, rate, lat, long, id_type, id_district FROM coffy.location " +
@@ -183,12 +270,34 @@ app.post('/find/dist', (req, res) => {
         })
         .then(data => {
             async.mapSeries(data, merge2, (err, result) => {
-                let dt = {
-                    'datas': result
+                let scope = {
+                    data: {
+                        data: result,
+                    }
+                    , vue: {
+                        head: {
+                            title: 'Home',
+                            meta:[
+                                // script
+                                {script:'/public/js/vue.min.js'},
+                                {sript:'/public/js/jquery-3.2.0.min.js'},
+                                {script:'/public/js/vue.min.js'},
+                                {script:'/public/js/bootstrap.min.js'},
+                                {script:'/public/js/script.js'},
+
+                                // style
+                                {style:'/public/css/reset.css',type: 'text/css', rel: 'stylesheet'},
+                                {style:'/public/css/bootstrap.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/font-awesome.min.css', rel: 'stylesheet'},
+                                {style:'/public/css/style.css', rel: 'stylesheet'},
+                                {style:'/public/css/responsive.css',type: 'text/css', rel: 'stylesheet'}
+                            ]
+                        },
+                        components: ['mynav','myfooter','mymaincontent']
+                    }
                 };
-                res.render('index1.html', dt);
-                // success;
-            })
+                res.render('index',scope);
+            });
         })
         .catch(error => {
             console.log(error);
@@ -198,7 +307,6 @@ app.post('/find/dist', (req, res) => {
      console.log(results);
      res.json(results);*/
 });
-
 
 //REST for Mobile
 app.post('/find/location', (req, res) => {

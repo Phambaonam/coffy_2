@@ -155,5 +155,10 @@ typings/
 # dotenv environment variables file
 .env
 
-
+/views/demo.html
+/views/map.html
+/views/map.vue
+/app1.js
+/.idea
+map.js
 # End of https://www.gitignore.io/api/node,intellij,intellij+iml
