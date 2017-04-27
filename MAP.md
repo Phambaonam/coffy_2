@@ -30,9 +30,6 @@
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAsB1OF-sOPmmMd9bwLpJfJfrdumJ_A6dI&callback=initMap">
 </script>
 ```
-## module được sử dụng:
-*   express
-*  express vue
 
 ## Các bước tiên hành:
 * Lấy key api_key google map [tại đây](https://developers.google.com/maps/documentation/javascript/get-api-key)
